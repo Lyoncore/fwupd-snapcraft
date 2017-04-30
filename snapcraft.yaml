@@ -1,5 +1,5 @@
 name: uefi-fw-tools # the name of the snap
-version: 1.4.1-0.7.2+git # the version of the snap
+version: 1.6.0-0.9.1+git # the version of the snap
 summary: UEFI Firmware update tools # 79 char long summary
 description: # A longer description for the snap
     uefi-fw-tools is a snap for UEFI firmware tool, currently include fwupd.
@@ -41,6 +41,8 @@ parts:
         source: https://github.com/lyoncore/efivar.git
         source-type: git
         source-branch: efivar-udev
+        prepare: |
+          sed -i -e 's/27/28/g' Make.version
         build-packages:
           - libpopt-dev
         organize:
@@ -97,10 +99,10 @@ parts:
           - --prefix=/usr
         after: [libfwup-dev]
     fwupd:
-        plugin: autotools
-        source: https://github.com/lyoncore/fwupd.git
+        plugin: meson
+        source: https://github.com/Lyoncore/fwupd.git
         source-type: git
-        source-branch: uefi-fw-tools-uc16-snap
+        source-branch: snap_0_9_X
         build-packages:
           - docbook-utils
           - gettext
@@ -111,7 +113,7 @@ parts:
           - gcab
           - libgirepository1.0-dev
           - libglib2.0-dev
-          - libgpgme11-dev
+          - libgpgme-dev
           - gnupg2
           - libtool-bin
           - libgudev-1.0-dev
@@ -126,17 +128,15 @@ parts:
           - valgrind
           - libsmbios-dev
           - libgdk-pixbuf2.0-dev
+          - libelf-dev
+          - libappstream-dev
+          - libappstream-glib-dev
         stage-packages:
           - glib-networking
           - gnupg
-        configflags:
-          - --disable-gtk-doc
-          - --disable-gtk-doc-html
-          - --disable-gtk-doc-pdf
-          - UEFI_CFLAGS=-I$SNAPCRAFT_STAGE/usr/include
-          - UEFI_LIBS=-L$SNAPCRAFT_STAGE/usr/lib/x86_64-linux-gnu/ -lfwup -lefivar -lefiboot
-          - APPSTREAM_GLIB_CFLAGS=-I$SNAPCRAFT_STAGE/usr/include/libappstream-glib -I$SNAPCRAFT_STAGE/usr/include/libappstream-builder -I/usr/include/gdk-pixbuf-2.0
-          - APPSTREAM_GLIB_LIBS=-L$SNAPCRAFT_STAGE/usr/lib/ -lappstream-glib
+        meson-parameters:
+          - --prefix=//
+          - --libdir=lib
         after: [appstream-glib-dev]
     update-mime:
         plugin: make

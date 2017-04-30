@@ -59,7 +59,7 @@ class MesonPlugin(snapcraft.BasePlugin):
         self.snapbuildname = 'snapbuild'
         self.mesonbuilddir = os.path.join(self.builddir, self.snapbuildname)
         self.build_packages.append('meson')
-        self.build_packages.append('ninja')
+        self.build_packages.append('ninja-build')
 
     def _meson(self):
         meson_command = ['meson']
