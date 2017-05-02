@@ -20,7 +20,7 @@ Meson based projects are projects that have a meson.build that drives the
 build.
 
 This plugin always runs 'meson snapbuild' followed by 'ninja' and
-'ninja install'. 
+'ninja install'.
 
 Additionally, this plugin uses the following plugin-specific keywords:
 
@@ -32,6 +32,7 @@ Additionally, this plugin uses the following plugin-specific keywords:
 
 import os
 import snapcraft
+
 
 class MesonPlugin(snapcraft.BasePlugin):
 
@@ -62,6 +63,7 @@ class MesonPlugin(snapcraft.BasePlugin):
         self.build_packages.append('ninja-build')
 
     def _meson(self):
+        os.makedirs(self.mesonbuilddir, exist_ok=True)
         meson_command = ['meson']
         if self.options.meson_parameters:
             meson_command.extend(self.options.meson_parameters)
