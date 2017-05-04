@@ -16,7 +16,9 @@ default_conf
 
 value=$(snapctl get conf.downloaduri)
 if [ -n "$value" ]; then
-	sed -i "s>DownloadURI=.*>DownloadURI=$value>" "$SNAP_DATA/etc/fwupd.conf"
+	cp $SNAP_DATA/etc/fwupd.conf $SNAP_DATA/etc/fwupd.conf.bak
+	sed "s>DownloadURI=.*>DownloadURI=$value>" "$SNAP_DATA/etc/fwupd.conf.bak" > "$SNAP_DATA/etc/fwupd.conf"
+	rm "$SNAP_DATA/etc/fwupd.conf.bak"
 else
 	#setup default conf.downloaduri from the default fwupd.conf
 	snapctl set conf.downloaduri=$(sed -n "s/DownloadURI=\(.*\)/\1/p" $SNAP/etc/fwupd.conf)
