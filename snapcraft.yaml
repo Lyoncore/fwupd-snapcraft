@@ -16,15 +16,20 @@ confinement: strict
 apps:
     fwupdmgr:
         command: bin/fwupdmgr.sh
-        plugs: [network,fwupdmgr] #network plug for sendmmsg
+        plugs: [network,fwupdmgr,fwupdmgr-dbus-client] #network plug for sendmmsg
     fwupd:
         command: bin/fwupd.sh
         daemon: simple
-        slots: [fwupd]
+        slots: [fwupd,fwupd-dbus-server]
+        plugs: [raw-usb,physical-memory-control]
 
 plugs:
   fwupdmgr:
     interface: fwupd
+  fwupdmgr-dbus-client:
+    interface: dbus
+    name: org.freedesktop.fwupd
+    bus: system
 
 slots:
   fwupd:
@@ -34,6 +39,14 @@ slots:
     interface: content
     write:
       - $SNAP_DATA
+  fwupd-dbus-server:
+    interface: dbus
+    name: org.freedesktop.fwupd
+    bus: system
+
+hooks:
+  configure: # fix confusing apparmor denial < snapd 2.23.6, lp: #1675812
+    plugs: [network]
 
 parts:
     libefivar-dev:
