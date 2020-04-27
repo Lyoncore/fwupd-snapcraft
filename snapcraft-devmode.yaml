@@ -1,75 +1,264 @@
-name: uefi-fw-tools # the name of the snap
-version: 1.0-0.7.2+git # the version of the snap
-summary: UEFI Firmware update tools # 79 char long summary
-description: # A longer description for the snap
-    uefi-fw-tools is a snap for UEFI firmware tool, currently include fwupd.
-
-    fwupd is a daemon to allow session software to update device firmware.
-    You can either use a GUI software manager like GNOME Software to view and
-    apply updates, the command-line tool or the system D-Bus interface directly.
-    Currently, firmware updates using the UEFI capsule format and for the
-    ColorHug are supported. More formats may be supported in the future.
-    See <https://github.com/hughsie/fwupd> for details
+name: uefi-fw-tools
+summary: UEFI Firmware update tools
+description: |
+  A uefi-fw-tools snap for UEFI firmware tool, currently include fwupd.
+  This is a tool that can be used to install firmware updates on devices
+  not yet supported by the version of fwupd distributed with the OS.
+grade: devel
+confinement: devmode
+base: core18
+adopt-info: fwupd
 
 apps:
-    fwupdmgr:
-        command: bin/fwupdmgr.sh
-        plugs: [network, network-bind]
-    fwupd:
-        command: bin/fwupd.sh
-        daemon: simple
-        plugs: [network, network-bind]
+  fwupd:
+    command: fwupd.wrapper
+    daemon: simple
+    slots: [fwupd]
+  fwupdmgr:
+    command: fwupdmgr.wrapper
+    completer:
+      share/bash-completion/completions/fwupdmgr
+    plugs: [network,fwupdmgr] #network plug for sendmmsg
 
-confinement: devmode
+plugs:
+  fwupdmgr:
+    interface: fwupd
+
+slots:
+  fwupd:
+    interface: fwupd
+  fwupd-data:
+    content: fwupd-data
+    interface: content
+    write:
+      - $SNAP_DATA
 
 parts:
-    fwupd:
-        plugin: autotools
-        source: https://github.com/timchen119/fwupd.git
-        source-type: git
-        source-branch: uefi-fw-tools-uc16-snap
-        build-packages:
-          - docbook-utils
-          - gettext
-          - intltool
-          - libappstream-glib-dev
-          - libarchive-dev
-          - libcolord-dev
-          - libfwup-dev
-          - libgcab-dev
-          - gcab
-          - libgirepository1.0-dev
-          - libglib2.0-dev
-          - libgpgme11-dev
-          - gnupg2
-          - libtool-bin
-          - libgudev-1.0-dev
-          - udev
-          - libgusb-dev
-          - libpolkit-gobject-1-dev
-          - libsqlite3-dev
-          - pkg-config
-          - libsoup2.4-dev
-          - gtk-doc-tools
-          - libcolorhug-dev
-          - valgrind
-          - libsmbios-dev
-        stage-packages:
-          - glib-networking
-          - gnupg
-        configflags:
-          - --disable-gtk-doc
-          - --disable-gtk-doc-html
-          - --disable-gtk-doc-pdf
-    update-mime:
-        plugin: make
-        source: update-mime
-        stage-packages:
-          - shared-mime-info
-          - libxml2
-        after: [fwupd]
-    startup-wrapper:
-        plugin: copy
-        files:
-          fwupd.sh: bin/fwupd.sh
-          fwupdmgr.sh: bin/fwupdmgr.sh
+  libefivar-dev:
+    plugin: make
+    source: https://github.com/lyoncore/efivar.git
+    source-type: git
+    source-branch: efivar-37
+    build-packages:
+      - libpopt-dev
+    organize:
+      usr/lib64: usr/lib/x86_64-linux-gnu
+  tpm2-tss:
+    plugin: autotools
+    source: https://github.com/tpm2-software/tpm2-tss/releases/download/2.3.0/tpm2-tss-2.3.0.tar.gz
+    configflags:
+      - --disable-doxygen-doc
+    prime:
+      - -include
+      - -bin
+      - -share/man
+      - -lib/pkgconfig
+    build-packages:
+      - libssl-dev
+  nettle:
+    plugin: autotools
+    source: https://ftp.gnu.org/gnu/nettle/nettle-3.5.tar.gz
+    build-packages:
+      - libgmp-dev
+    prime:
+      - -include
+      - -bin
+      - -share/man
+      - -lib/pkgconfig
+  gnutls:
+    plugin: autotools
+    source: https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.12.tar.xz
+    build-packages:
+      - libtasn1-6-dev
+      - libunistring-dev
+      - libidn2-dev
+      - libunbound-dev
+      - libp11-kit-dev
+    prime:
+      - -include
+      - -bin
+      - -share/man
+      - -lib/pkgconfig
+    after: [nettle]
+  meson:
+    plugin: python
+    source: https://github.com/mesonbuild/meson/releases/download/0.54.0/meson-0.54.0.tar.gz
+    build-packages:
+      - ninja-build
+      - python3-distutils-extra
+    prime:
+      - -bin
+      - -etc
+      - -lib
+      - -share
+      - -usr
+  #needed for UEFI plugin to build UX labels
+  build-introspection:
+    plugin: nil
+    stage-packages:
+      - python3-gi
+      - python3-gi-cairo
+      - python3-pil
+    prime:
+      - -etc
+      - -usr
+      - -lib
+      - -var
+  fwupd:
+    plugin: meson
+    meson-parameters: [--prefix=/,
+                       -Dtests=false,
+                       -Dbuild=all,
+                       -Dgtkdoc=false,
+                       -Dintrospection=false,
+                       -Dman=false,
+                       -Dplugin_modem_manager=false,
+                       -Dudevdir=$SNAPCRAFT_STAGE/lib/udev,
+                       "-Dlibxmlb:gtkdoc=false",
+                       "-Dlibxmlb:introspection=false",
+                       "-Dlibjcat:man=false",
+                       "-Dlibjcat:gtkdoc=false",
+                       "-Dlibjcat:introspection=false",
+                       "-Dlibjcat:tests=false"]
+    source: https://github.com/Lyoncore/fwupd.git
+    source-type: git
+    source-branch: core18_1_4_0
+    override-build: |
+      snapcraftctl build
+      echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
+      UEFI_FW_TOOLS=1.6.0
+      FWUPD=1.4.0
+      VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
+      snapcraftctl set-version $VERSION
+    build-packages:
+      - bash-completion
+      - gcab
+      - gnu-efi
+      - libarchive-dev
+      - libcairo-dev
+      - libelf-dev
+      - libftdi1-dev
+      - libgudev-1.0-dev
+      - libgusb-dev
+      - libgcab-dev
+      - libglib2.0-dev
+      - libgpgme11-dev
+      - libjson-glib-dev
+      - libpango1.0-dev
+      - libpci-dev
+      - libpolkit-gobject-1-dev
+      - libsmbios-dev
+      - libsoup2.4-dev
+      - libsqlite3-dev
+      - locales
+      - pkg-config
+      - systemd
+      - uuid-dev
+    stage-packages:
+      - libgcab-1.0-0
+      - libarchive13
+      - libassuan0
+      - liblcms2-2
+      - libelf1
+      - libgusb2
+      - libusb-1.0-0
+      - libgudev-1.0-0
+      - libgpgme11
+      - libjson-glib-1.0-0
+      - libpolkit-gobject-1-0
+      - libsmbios-c2
+      - libsoup2.4-1
+      - glib-networking
+      - libglib2.0-bin
+    prime:
+      # we explicitly don't want /usr/bin/gpgconf
+      # this will cause gpgme to error finding it
+      # but that also avoids trying to use non-existent
+      # /usr/bin/gpg2
+      - -usr/bin
+      - -usr/sbin
+      - -usr/share/man
+      - -usr/share/GConf
+      - -etc/X11
+      - -etc/ldap
+      - -etc/logcheck
+      - -usr/lib/dconf
+      - -usr/lib/gcc
+      - -usr/lib/glib-networking
+      - -usr/lib/gnupg2
+      - -usr/lib/sasl2
+      - -usr/lib/systemd
+      - -usr/lib/*/audit
+      - -usr/share/glib-2.0/schemas
+      - -usr/share/X11
+      - -include
+      - -lib/udev
+      - -lib/*/pkgconfig
+      - -usr/share/lintian
+      - -usr/share/pkgconfig
+      - -usr/share/installed-tests
+      - -usr/share/polkit-1
+      - -usr/share/vala
+      - -usr/share/doc
+      - -usr/share/gnupg2
+      - -usr/share/info
+      - -usr/share/gir-1.0
+      - -usr/share/upstart
+      - -usr/lib/*/pkgconfig
+      # we don't want system gnutls leaking in
+      - -usr/lib/*/libgnutls*
+    after: [libefivar-dev, meson, build-introspection, tpm2-tss, gnutls]
+  #fetch the latest version of the signed bootloader
+  #this might not match our fwupdx64.efi, but it's better than nothing
+  fwup-efi-signed:
+    build-packages:
+      - python3-apt
+    plugin: make
+    source: .
+    override-build: |
+      cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/fwup-efi-signed/* .
+      snapcraftctl build
+    after: [fwupd]
+  fix-bash-completion:
+    plugin: make
+    source: .
+    override-build: |
+      cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/fix-bash-completion/* .
+      snapcraftctl build
+    after: [fwupd]
+  activate-shutdown:
+    plugin: make
+    source: .
+    override-build: |
+      cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/activate-shutdown/* .
+      snapcraftctl build
+    after: [fwupd]
+  update-mime:
+    plugin: make
+    source: .
+    override-build: |
+      cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/update-mime/* .
+      snapcraftctl build
+    stage-packages:
+      - shared-mime-info
+      - gsettings-desktop-schemas
+      - libxml2
+    prime:
+      - -usr/bin
+      - -usr/share/doc
+      - -usr/share/doc-base
+      - -usr/share/man
+      - -usr/share/lintian
+      - -usr/share/pkgconfig
+      - -usr/share/GConf
+    after: [fwupd]
+  fwupd-wrappers:
+    plugin: dump
+    source: .
+    override-build: |
+      cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/*.wrapper .
+      snapcraftctl build
+    stage:
+      - fwupd.wrapper
+      - fwupdmgr.wrapper
+    after: [update-mime]
