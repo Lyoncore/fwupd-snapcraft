@@ -257,8 +257,10 @@ parts:
     source: .
     override-build: |
       cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/*.wrapper .
+      cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/fwupd-command .
       snapcraftctl build
     stage:
+      - fwupd-command
       - fwupd.wrapper
       - fwupdmgr.wrapper
     after: [update-mime]
