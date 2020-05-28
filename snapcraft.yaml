@@ -43,6 +43,12 @@ parts:
       - libpopt-dev
     organize:
       usr/lib64: usr/lib/x86_64-linux-gnu
+  libefivar-fixpkgconfig:
+    plugin: make
+    source: libefivar-fixpkgconfig
+    make-parameters:
+      - SNAPCRAFT_STAGE=$SNAPCRAFT_STAGE
+    after: [libefivar-dev]
   tpm2-tss:
     plugin: autotools
     source: https://github.com/tpm2-software/tpm2-tss/releases/download/2.3.0/tpm2-tss-2.3.0.tar.gz
@@ -122,12 +128,12 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/Lyoncore/fwupd.git
     source-type: git
-    source-branch: core18_1_4_0
+    source-branch: stable_release_for_core
     override-build: |
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       UEFI_FW_TOOLS=1.6.0
-      FWUPD=1.4.0
+      FWUPD=1.4.2
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
@@ -207,7 +213,7 @@ parts:
       - -usr/lib/*/pkgconfig
       # we don't want system gnutls leaking in
       - -usr/lib/*/libgnutls*
-    after: [libefivar-dev, meson, build-introspection, tpm2-tss, gnutls]
+    after: [libefivar-fixpkgconfig, meson, build-introspection, tpm2-tss, gnutls]
   #fetch the latest version of the signed bootloader
   #this might not match our fwupdx64.efi, but it's better than nothing
   fwup-efi-signed:
