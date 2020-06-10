@@ -1,9 +1,9 @@
-name: uefi-fw-tools
-summary: UEFI Firmware update tools
+name: fwupd
+summary: A standalone version of fwupd to install newer firmware updates
 description: |
-  A uefi-fw-tools snap for UEFI firmware tool, currently include fwupd.
   This is a tool that can be used to install firmware updates on devices
   not yet supported by the version of fwupd distributed with the OS.
+
 grade: devel
 confinement: strict
 base: core18
@@ -13,6 +13,7 @@ apps:
   fwupd:
     command: fwupd.wrapper
     daemon: simple
+    #plugs: [raw-volume]
     slots: [fwupd]
   fwupdmgr:
     command: fwupdmgr.wrapper
@@ -132,6 +133,7 @@ parts:
     override-build: |
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
+      # TODO: don't use hardcoded
       UEFI_FW_TOOLS=1.6.0
       FWUPD=1.4.2
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
