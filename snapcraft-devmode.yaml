@@ -39,7 +39,7 @@ parts:
     plugin: make
     source: https://github.com/lyoncore/efivar.git
     source-type: git
-    source-branch: efivar-37
+    source-branch: 20200423
     build-packages:
       - libpopt-dev
     organize:
@@ -127,12 +127,10 @@ parts:
                        "-Dlibjcat:gtkdoc=false",
                        "-Dlibjcat:introspection=false",
                        "-Dlibjcat:tests=false"]
-    source: https://github.com/fwupd/fwupd.git
+    source: https://github.com/Lyoncore/fwupd.git
     source-type: git
-    source-tag: 1.4.2
+    source-branch: stable_release_for_core
     override-build: |
-      # apply patches from fwupd-snapcraft
-      git am $SNAPCRAFT_PART_BUILD/../../../patches/fwupd/000*.patch
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded

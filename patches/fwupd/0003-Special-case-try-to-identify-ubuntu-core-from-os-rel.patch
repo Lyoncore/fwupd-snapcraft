@@ -1,0 +1,36 @@
+From 342882255713755057afc277e5f6c4e9f36c7f78 Mon Sep 17 00:00:00 2001
+From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
+Date: Wed, 10 Jun 2020 17:11:16 +0800
+Subject: [PATCH 3/4] Special case: try to identify ubuntu-core from os-release
+
+In case of ubuntu-core, ID from /etc/os-release will be "ubuntu-core"
+instead of "ubuntu", but ubuntu-core still uses /boot/efi/EFI/ubuntu for
+ESP. For short term, let's keep this way until we find a better one.
+---
+ plugins/uefi/fu-uefi-common.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/plugins/uefi/fu-uefi-common.c b/plugins/uefi/fu-uefi-common.c
+index 70e0c93c..c692506a 100644
+--- a/plugins/uefi/fu-uefi-common.c
++++ b/plugins/uefi/fu-uefi-common.c
+@@ -244,8 +244,14 @@ fu_uefi_get_esp_path_for_os (const gchar *base)
+ 	}
+ 	if (os_release_id == NULL)
+ 		os_release_id = "unknown";
+-	/* if ID key points at something existing return it */
+-	esp_path = g_build_filename (base, "EFI", os_release_id, NULL);
++	/* special case: try to identify if ID is ubuntu-core */
++	if (g_strcmp0(os_release_id, "ubuntu-core") == 0) {
++		esp_path = g_build_filename (base, "EFI", "ubuntu", NULL);
++	}
++	else {
++		/* if ID key points at something existing return it */
++		esp_path = g_build_filename (base, "EFI", os_release_id, NULL);
++	}
+ 	if (g_file_test (esp_path, G_FILE_TEST_IS_DIR) || os_release == NULL)
+ 		return g_steal_pointer (&esp_path);
+ 	/* if ID key doesn't exist, try ID_LIKE */
+-- 
+2.25.1
+

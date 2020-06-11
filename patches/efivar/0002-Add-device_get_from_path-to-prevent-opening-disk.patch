@@ -1,0 +1,275 @@
+From 4434e2006f4d6ad8e3b344f4e1ff1ef61c7668a2 Mon Sep 17 00:00:00 2001
+From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
+Date: Wed, 10 Jun 2020 18:10:13 +0800
+Subject: [PATCH 2/4] Add device_get_from_path to prevent opening disk
+
+This is one of patchset to prevent using open disk directly, and the only
+difference with original func device_get is using devpath passed from
+caller instead.
+---
+ src/linux.c | 236 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/linux.h |   1 +
+ 2 files changed, 237 insertions(+)
+
+diff --git a/src/linux.c b/src/linux.c
+index a9d6801..c673fd4 100644
+--- a/src/linux.c
++++ b/src/linux.c
+@@ -596,6 +596,242 @@ err:
+ 	return NULL;
+ }
+ 
++struct device HIDDEN
++*device_get_from_path(const char *devpath, int partition)
++{
++	struct device *dev;
++	char *linkbuf = NULL, *tmpbuf = NULL;
++	int i = 0;
++	unsigned int n = 0;
++	int rc;
++
++	size_t nmemb = (sizeof(dev_probes)
++	                / sizeof(dev_probes[0])) + 1;
++
++	dev = calloc(1, sizeof(*dev));
++	if (!dev) {
++	        efi_error("could not allocate %zd bytes", sizeof(*dev));
++	        return NULL;
++	}
++
++	dev->part = partition;
++	debug("partition:%d dev->part:%d", partition, dev->part);
++	dev->probes = calloc(nmemb, sizeof(struct dev_probe *));
++	if (!dev->probes) {
++	        efi_error("could not allocate %zd bytes",
++	                  nmemb * sizeof(struct dev_probe *));
++	        goto err;
++	}
++
++	rc = stat(devpath, &dev->stat);
++	if (rc < 0) {
++		efi_error("stat failed");
++		goto err;
++	}
++
++	dev->pci_root.pci_domain = 0xffff;
++	dev->pci_root.pci_bus = 0xff;
++
++	if (S_ISBLK(dev->stat.st_mode)) {
++	        dev->major = major(dev->stat.st_rdev);
++	        dev->minor = minor(dev->stat.st_rdev);
++	} else if (S_ISREG(dev->stat.st_mode)) {
++	        dev->major = major(dev->stat.st_dev);
++	        dev->minor = minor(dev->stat.st_dev);
++	} else {
++	        efi_error("device is not a block device or regular file");
++	        goto err;
++	}
++
++	rc = sysfs_readlink(&linkbuf, "dev/block/%"PRIu64":%"PRIu32,
++	                    dev->major, dev->minor);
++	if (rc < 0 || !linkbuf) {
++	        efi_error("readlink of /sys/dev/block/%"PRIu64":%"PRIu32" failed",
++	                  dev->major, dev->minor);
++	        goto err;
++	}
++
++	dev->link = strdup(linkbuf);
++	if (!dev->link) {
++	        efi_error("strdup(\"%s\") failed", linkbuf);
++	        goto err;
++	}
++	debug("dev->link: %s", dev->link);
++
++	if (dev->part == -1) {
++	        rc = read_sysfs_file(&tmpbuf, "dev/block/%s/partition", dev->link);
++	        if (rc < 0 || !tmpbuf) {
++	                efi_error("device has no /partition node; not a partition");
++	        } else {
++	                rc = sscanf((char *)tmpbuf, "%d\n", &dev->part);
++	                if (rc != 1)
++	                        efi_error("couldn't parse partition number for %s", tmpbuf);
++	        }
++	}
++
++	rc = set_disk_and_part_name(dev);
++	if (rc < 0) {
++	        efi_error("could not set disk and partition names");
++	        goto err;
++	}
++	debug("dev->disk_name: %s", dev->disk_name);
++	debug("dev->part_name: %s", dev->part_name);
++
++	rc = sysfs_readlink(&tmpbuf, "block/%s/device", dev->disk_name);
++	if (rc < 0 || !tmpbuf) {
++	        debug("readlink of /sys/block/%s/device failed",
++	                  dev->disk_name);
++
++	        dev->device = strdup("");
++	} else {
++	        dev->device = strdup(tmpbuf);
++	}
++
++	if (!dev->device) {
++	        efi_error("strdup(\"%s\") failed", tmpbuf);
++	        goto err;
++	}
++
++	/*
++	 * So, on a normal disk, you get something like:
++	 * /sys/block/sda/device -> ../../0:0:0:0
++	 * /sys/block/sda/device/driver -> ../../../../../../../bus/scsi/drivers/sd
++	 *
++	 * On a directly attached nvme device you get:
++	 * /sys/block/nvme0n1/device -> ../../nvme0
++	 * /sys/block/nvme0n1/device/device -> ../../../0000:6e:00.0
++	 * /sys/block/nvme0n1/device/device/driver -> ../../../../bus/pci/drivers/nvme
++	 *
++	 * On a fabric-attached nvme device, you get something like:
++	 * /sys/block/nvme0n1/device -> ../../nvme0
++	 * /sys/block/nvme0n1/device/device -> ../../ctl
++	 * /sys/block/nvme0n1/device/device/device -> ../../../../../0000:6e:00.0
++	 * /sys/block/nvme0n1/device/device/device/driver -> ../../../../../../bus/pci/drivers/nvme-fabrics
++	 *
++	 * ... I think?  I don't have one in front of me.
++	 */
++
++	char *filepath = NULL;
++	rc = find_device_file(&filepath, "driver", "block/%s", dev->disk_name);
++	if (rc >= 0) {
++		rc = sysfs_readlink(&tmpbuf, "%s", filepath);
++	        if (rc < 0 || !tmpbuf) {
++			efi_error("readlink of /sys/%s failed", filepath);
++	                goto err;
++	        }
++
++	        linkbuf = pathseg(tmpbuf, -1);
++	        if (!linkbuf) {
++	                efi_error("could not get segment -1 of \"%s\"", tmpbuf);
++	                goto err;
++	        }
++
++	        dev->driver = strdup(linkbuf);
++	} else {
++		dev->driver = strdup("");
++	}
++
++	if (!dev->driver) {
++	        efi_error("strdup(\"%s\") failed", linkbuf);
++	        goto err;
++	}
++
++	const char *current = dev->link;
++	bool needs_root = true;
++	int last_successful_probe = -1;
++
++	debug("searching for device nodes in %s", dev->link);
++	for (i = 0;
++	     dev_probes[i] && dev_probes[i]->parse && *current;
++	     i++) {
++	        struct dev_probe *probe = dev_probes[i];
++	        int pos;
++
++	        if (!needs_root &&
++	            (probe->flags & DEV_PROVIDES_ROOT)) {
++	                debug("not testing %s because flags is 0x%x",
++	                      probe->name, probe->flags);
++	                continue;
++	        }
++
++	        debug("trying %s", probe->name);
++	        pos = probe->parse(dev, current, dev->link);
++	        if (pos < 0) {
++	                efi_error("parsing %s failed", probe->name);
++	                goto err;
++	        } else if (pos > 0) {
++			char match[pos+1];
++
++			strncpy(match, current, pos);
++			match[pos] = '\0';
++	                debug("%s matched '%s'", probe->name, match);
++	                dev->flags |= probe->flags;
++
++	                if (probe->flags & DEV_PROVIDES_HD ||
++	                    probe->flags & DEV_PROVIDES_ROOT ||
++	                    probe->flags & DEV_ABBREV_ONLY)
++	                        needs_root = false;
++
++			if (probe->create)
++				print_dev_dp_node(dev, probe);
++
++	                dev->probes[n++] = dev_probes[i];
++	                current += pos;
++			if (current[0] == '\0')
++				debug("finished");
++			else
++				debug("current:'%s'", current);
++	                last_successful_probe = i;
++
++	                if (!*current || !strncmp(current, "block/", 6))
++	                        break;
++
++	                continue;
++	        }
++
++	        debug("dev_probes[%d]: %p dev->interface_type: %d\n",
++	              i+1, dev_probes[i+1], dev->interface_type);
++	        if (dev_probes[i+1] == NULL && dev->interface_type == unknown) {
++	                pos = 0;
++	                rc = sscanf(current, "%*[^/]/%n", &pos);
++	                if (rc < 0) {
++slash_err:
++	                        efi_error("Cannot parse device link segment \"%s\"", current);
++	                        goto err;
++	                }
++
++	                while (current[pos] == '/')
++	                        pos += 1;
++
++	                if (!current[pos])
++	                        goto slash_err;
++
++	                debug("Cannot parse device link segment '%s'", current);
++	                debug("Skipping to '%s'", current + pos);
++	                debug("This means we can only create abbreviated paths");
++	                dev->flags |= DEV_ABBREV_ONLY;
++	                i = last_successful_probe;
++	                current += pos;
++
++	                if (!*current || !strncmp(current, "block/", 6))
++	                        break;
++	        }
++	}
++
++	if (dev->interface_type == unknown &&
++	    !(dev->flags & DEV_ABBREV_ONLY) &&
++	    !strcmp(current, "block/")) {
++	        efi_error("unknown storage interface");
++	        errno = ENOSYS;
++	        goto err;
++	}
++
++	return dev;
++err:
++	device_free(dev);
++	return NULL;
++}
++
+ int HIDDEN
+ make_blockdev_path(uint8_t *buf, ssize_t size, struct device *dev)
+ {
+diff --git a/src/linux.h b/src/linux.h
+index 513f2fa..8a69805 100644
+--- a/src/linux.h
++++ b/src/linux.h
+@@ -140,6 +140,7 @@ struct device {
+ };
+ 
+ extern struct device HIDDEN *device_get(int fd, int partition);
++extern struct device HIDDEN *device_get_from_path(const char *devpath, int partition);
+ extern void HIDDEN device_free(struct device *dev);
+ extern int HIDDEN set_disk_and_part_name(struct device *dev);
+ extern int HIDDEN set_part(struct device *dev, int value);
+-- 
+2.25.1
+

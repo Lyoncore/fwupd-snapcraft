@@ -1,0 +1,184 @@
+From 9aea05c4b67ec2bc5bb75e0717a084803889c44c Mon Sep 17 00:00:00 2001
+From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
+Date: Wed, 10 Jun 2020 18:17:52 +0800
+Subject: [PATCH 4/4] Prevent to use open_disk when fwupd is confined
+
+This commit is one of patchset to comment out open_disk() and use
+child_devpath as devpath instead. Right now we only assume that ESP
+device must be GPT, so we have the limitation here.
+---
+ src/creator.c | 97 +++++++++++++++------------------------------------
+ 1 file changed, 28 insertions(+), 69 deletions(-)
+
+diff --git a/src/creator.c b/src/creator.c
+index 0ea2784..699431a 100644
+--- a/src/creator.c
++++ b/src/creator.c
+@@ -124,24 +124,24 @@ err:
+ 	return ret;
+ }
+ 
+-static int
+-open_disk(struct device *dev, int flags)
+-{
+-	char *diskpath = NULL;
+-	int rc;
+-
+-	rc = asprintfa(&diskpath, "/dev/%s", dev->disk_name);
+-	if (rc < 0) {
+-		efi_error("could not allocate buffer");
+-		return -1;
+-	}
+-
+-	rc = open(diskpath, flags);
+-	if (rc < 0)
+-		efi_error("could not open disk");
+-
+-	return rc;
+-}
++//static int
++//open_disk(struct device *dev, int flags)
++//{
++//	char *diskpath = NULL;
++//	int rc;
++//
++//	rc = asprintfa(&diskpath, "/dev/%s", dev->disk_name);
++//	if (rc < 0) {
++//		efi_error("could not allocate buffer");
++//		return -1;
++//	}
++//
++//	rc = open(diskpath, flags);
++//	if (rc < 0)
++//		efi_error("could not open disk");
++//
++//	return rc;
++//}
+ 
+ static char *
+ tilt_slashes(char *s)
+@@ -169,37 +169,20 @@ efi_va_generate_file_device_path_from_esp(uint8_t *buf, ssize_t size,
+ 	if (buf && size)
+ 		memset(buf, '\0', size);
+ 
+-	fd = open(devpath, O_RDONLY);
+-	if (fd < 0) {
+-		efi_error("could not open device for ESP");
+-		goto err;
+-	}
+-
+-	dev = device_get(fd, partition);
++	dev = device_get_from_path(devpath, partition);
+ 	if (dev == NULL) {
+ 		efi_error("could not get ESP disk info");
+ 		goto err;
+ 	}
+ 
+ 	if (partition < 0) {
+-		int disk_fd;
+-
+ 		debug("partition: %d", partition);
+-		disk_fd = open_disk(dev,
+-				    (options & EFIBOOT_OPTIONS_WRITE_SIGNATURE)
+-				     ? O_RDWR : O_RDONLY);
+-		if (disk_fd < 0) {
+-			efi_error("could not open disk");
+-			goto err;
+-		}
+ 
+-		if (is_partitioned(disk_fd))
++		if (is_partitioned(devpath))
+ 			partition = 1;
+ 		else
+ 			partition = 0;
+ 		debug("is_partitioned(): partition -> %d", partition);
+-
+-		close(disk_fd);
+ 	}
+ 
+ 	set_part(dev, partition);
+@@ -264,21 +247,11 @@ efi_va_generate_file_device_path_from_esp(uint8_t *buf, ssize_t size,
+ 
+ 	if ((!(options & EFIBOOT_ABBREV_FILE) && dev->part_name) ||
+ 	    ((options & EFIBOOT_ABBREV_HD) && ! dev->part_name)) {
+-		int disk_fd;
+ 		int saved_errno;
+ 
+-		disk_fd = open_disk(dev,
+-				    (options & EFIBOOT_OPTIONS_WRITE_SIGNATURE)
+-				     ? O_RDWR : O_RDONLY);
+-		if (disk_fd < 0) {
+-			efi_error("could not open disk");
+-			goto err;
+-		}
+-
+-		sz = make_hd_dn(buf+off, size?size-off:0,
+-				disk_fd, dev->part, options);
++		sz = make_hd_dn_udev(buf+off, size?size-off:0,
++				devpath, dev->part, options);
+ 		saved_errno = errno;
+-		close(disk_fd);
+ 		errno = saved_errno;
+ 		if (sz < 0) {
+ 			efi_error("could not make HD() DP node");
+@@ -337,19 +310,12 @@ efi_generate_file_device_path_from_esp(uint8_t *buf, ssize_t size,
+ }
+ 
+ static int
+-get_part(char *devpath)
++get_part_num(char *devpath)
+ {
+-	int fd;
+ 	int partition = -1;
+ 	struct device *dev = NULL;
+ 
+-	fd = open(devpath, O_RDONLY);
+-	if (fd < 0) {
+-		efi_error("could not open device for ESP");
+-		goto err;
+-	}
+-
+-	dev = device_get(fd, -1);
++	dev = device_get_from_path(devpath, -1);
+ 	if (dev == NULL) {
+ 		efi_error("could not get ESP disk info");
+ 		goto err;
+@@ -361,8 +327,6 @@ get_part(char *devpath)
+ err:
+ 	if (dev)
+ 		device_free(dev);
+-	if (fd >= 0)
+-		close(fd);
+ 	return partition;
+ }
+ 
+@@ -396,7 +360,7 @@ efi_generate_file_device_path(uint8_t *buf, ssize_t size,
+ 	debug("child_devpath:%s", child_devpath);
+ 	debug("rc:%d", rc);
+ 
+-	rc = get_part(child_devpath);
++	rc = get_part_num(child_devpath);
+ 	if (rc < 0) {
+ 		efi_error("Couldn't get partition number for %s",
+ 			  child_devpath);
+@@ -406,14 +370,9 @@ efi_generate_file_device_path(uint8_t *buf, ssize_t size,
+ 
+ 	va_start(ap, options);
+ 
+-	if (!strcmp(parent_devpath, "/dev/block"))
+-		ret = efi_va_generate_file_device_path_from_esp(buf, size,
+-							child_devpath, rc,
+-							relpath, options, ap);
+-	else
+-		ret = efi_va_generate_file_device_path_from_esp(buf, size,
+-							parent_devpath, rc,
+-							relpath, options, ap);
++	ret = efi_va_generate_file_device_path_from_esp(buf, size,
++						child_devpath, rc,
++						relpath, options, ap);
+ 	saved_errno = errno;
+ 	va_end(ap);
+ 	errno = saved_errno;
+-- 
+2.25.1
+
