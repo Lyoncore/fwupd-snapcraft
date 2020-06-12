@@ -1,4 +1,4 @@
-name: fwupd
+name: uefi-fw-tools
 summary: A standalone version of fwupd to install newer firmware updates
 description: |
   This is a tool that can be used to install firmware updates on devices
@@ -39,7 +39,7 @@ parts:
     plugin: make
     source: https://github.com/lyoncore/efivar.git
     source-type: git
-    source-branch: 20200423
+    source-branch: '20200423'
     build-packages:
       - libpopt-dev
     organize:
