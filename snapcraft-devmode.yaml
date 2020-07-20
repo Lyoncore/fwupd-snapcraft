@@ -13,13 +13,13 @@ apps:
   fwupd:
     command: fwupd.wrapper
     daemon: simple
-    #plugs: [raw-volume]
+    plugs: [hardware-observe]
     slots: [fwupd]
   fwupdmgr:
     command: fwupdmgr.wrapper
     completer:
       share/bash-completion/completions/fwupdmgr
-    plugs: [network,fwupdmgr] #network plug for sendmmsg
+    plugs: [network,fwupdmgr,shutdown] #network plug for sendmmsg
 
 plugs:
   fwupdmgr:
