@@ -4,7 +4,7 @@ description: |
   This is a tool that can be used to install firmware updates on devices
   not yet supported by the version of fwupd distributed with the OS.
 
-grade: devel
+grade: stable
 confinement: strict
 base: core18
 adopt-info: fwupd
