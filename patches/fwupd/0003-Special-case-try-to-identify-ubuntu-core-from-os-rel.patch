@@ -22,7 +22,7 @@ index 70e0c93c..c692506a 100644
 -	esp_path = g_build_filename (base, "EFI", os_release_id, NULL);
 +	/* special case: try to identify if ID is ubuntu-core */
 +	if (g_strcmp0(os_release_id, "ubuntu-core") == 0) {
-+		esp_path = g_build_filename (base, "EFI", "ubuntu", NULL);
++		esp_path = g_build_filename (base, "EFI", "boot", NULL);
 +	}
 +	else {
 +		/* if ID key points at something existing return it */
