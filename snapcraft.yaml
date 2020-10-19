@@ -133,7 +133,7 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/fwupd/fwupd.git
     source-type: git
-    source-tag: 1.4.6
+    source-tag: 1.4.5
     override-build: |
       # apply patches from fwupd-snapcraft
       git am $SNAPCRAFT_PART_BUILD/../../../patches/fwupd/000*.patch
@@ -141,7 +141,7 @@ parts:
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded
       UEFI_FW_TOOLS=1.6.0
-      FWUPD=1.4.6
+      FWUPD=1.4.5
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
