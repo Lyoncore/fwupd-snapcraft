@@ -1,7 +1,7 @@
-From 8e1b79d52d240c79e13cf5d43f9665f13bfff52c Mon Sep 17 00:00:00 2001
+From 9f6f266852382b77fb359675735a40203f8e400c Mon Sep 17 00:00:00 2001
 From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
 Date: Mon, 1 Jun 2020 21:10:51 +0800
-Subject: [PATCH 1/4] Change policy rule to force to use sudo as default group
+Subject: [PATCH 1/6] Change policy rule to force to use sudo as default group
 
 ---
  policy/org.freedesktop.fwupd.rules | 2 +-

@@ -1,14 +1,14 @@
-From 83176424b2027f8e0d32ac6fdc541713d5c5039d Mon Sep 17 00:00:00 2001
+From b641ab222ebff198e3d40f729017bb7bee0b02e9 Mon Sep 17 00:00:00 2001
 From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
 Date: Thu, 11 Jun 2020 16:11:53 +0800
-Subject: [PATCH 4/4] Force to skip polkit authorization for ubuntu core
+Subject: [PATCH 4/6] Force to skip polkit authorization for ubuntu core
 
 ---
  src/fu-main.c | 20 ++++++++++++++++++++
  1 file changed, 20 insertions(+)
 
 diff --git a/src/fu-main.c b/src/fu-main.c
-index 8ff196e4..6242f18d 100644
+index e88e1426..08dbf7f4 100644
 --- a/src/fu-main.c
 +++ b/src/fu-main.c
 @@ -23,6 +23,7 @@
@@ -19,7 +19,7 @@ index 8ff196e4..6242f18d 100644
  
  #include "fu-common.h"
  #include "fu-debug.h"
-@@ -558,6 +559,9 @@ static void fu_main_authorize_install_queue (FuMainAuthHelper *helper);
+@@ -591,6 +592,9 @@ static void fu_main_authorize_install_queue (FuMainAuthHelper *helper);
  static void
  fu_main_authorize_install_cb (GObject *source, GAsyncResult *res, gpointer user_data)
  {
@@ -29,7 +29,7 @@ index 8ff196e4..6242f18d 100644
  	g_autoptr(FuMainAuthHelper) helper = (FuMainAuthHelper *) user_data;
  	g_autoptr(GError) error = NULL;
  	g_autoptr(PolkitAuthorizationResult) auth = NULL;
-@@ -566,11 +570,27 @@ fu_main_authorize_install_cb (GObject *source, GAsyncResult *res, gpointer user_
+@@ -599,11 +603,27 @@ fu_main_authorize_install_cb (GObject *source, GAsyncResult *res, gpointer user_
  	fu_main_set_status (helper->priv, FWUPD_STATUS_IDLE);
  	auth = polkit_authority_check_authorization_finish (POLKIT_AUTHORITY (source),
  							    res, &error);

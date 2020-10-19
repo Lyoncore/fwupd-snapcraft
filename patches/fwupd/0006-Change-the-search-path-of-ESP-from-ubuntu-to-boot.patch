@@ -1,0 +1,43 @@
+From 277e14f1e96c25d25434a969554d90cc0ccac4da Mon Sep 17 00:00:00 2001
+From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
+Date: Mon, 19 Oct 2020 11:21:42 +0000
+Subject: [PATCH 6/6] Change the search path of ESP from ubuntu to boot
+
+To align with the ubuntu core layout, we will have to change the esp
+path that is /EFI/boot instead of /EFI/ubuntu. Also, the searching path
+for shim can use the same file provided by generic gadget.
+---
+ plugins/uefi/fu-uefi-bootmgr.c | 3 ++-
+ plugins/uefi/fu-uefi-common.c  | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/plugins/uefi/fu-uefi-bootmgr.c b/plugins/uefi/fu-uefi-bootmgr.c
+index 4d9319be..90290f47 100644
+--- a/plugins/uefi/fu-uefi-bootmgr.c
++++ b/plugins/uefi/fu-uefi-bootmgr.c
+@@ -309,7 +309,8 @@ fu_uefi_bootmgr_bootnext (const gchar *esp_path,
+ 	secure_boot = fu_efivar_secure_boot_enabled ();
+ 	if (secure_boot) {
+ 		/* test to make sure shim is there if we need it */
+-		shim_app = fu_uefi_get_esp_app_path (esp_path, "shim", error);
++		/* ubuntu core: the shim is located at /EFI/boot/bootx64.efi */
++		shim_app = fu_uefi_get_esp_app_path (esp_path, "boot", error);
+ 		if (shim_app == NULL)
+ 			return FALSE;
+ 
+diff --git a/plugins/uefi/fu-uefi-common.c b/plugins/uefi/fu-uefi-common.c
+index c4ab152a..a9cea6c6 100644
+--- a/plugins/uefi/fu-uefi-common.c
++++ b/plugins/uefi/fu-uefi-common.c
+@@ -237,7 +237,7 @@ fu_uefi_get_esp_path_for_os (const gchar *base)
+ 		os_release_id = "unknown";
+ 	/* special case: try to identify if ID is ubuntu-core */
+ 	if (g_strcmp0(os_release_id, "ubuntu-core") == 0) {
+-		esp_path = g_build_filename (base, "EFI", "ubuntu", NULL);
++		esp_path = g_build_filename (base, "EFI", "boot", NULL);
+ 	}
+ 	else {
+ 		/* if ID key points at something existing return it */
+-- 
+2.25.1
+

@@ -1,7 +1,7 @@
-From 342882255713755057afc277e5f6c4e9f36c7f78 Mon Sep 17 00:00:00 2001
+From b2a915151ec4fc3626c2d29d973075ff8dc49ef1 Mon Sep 17 00:00:00 2001
 From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
 Date: Wed, 10 Jun 2020 17:11:16 +0800
-Subject: [PATCH 3/4] Special case: try to identify ubuntu-core from os-release
+Subject: [PATCH 3/6] Special case: try to identify ubuntu-core from os-release
 
 In case of ubuntu-core, ID from /etc/os-release will be "ubuntu-core"
 instead of "ubuntu", but ubuntu-core still uses /boot/efi/EFI/ubuntu for
@@ -11,10 +11,10 @@ ESP. For short term, let's keep this way until we find a better one.
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/plugins/uefi/fu-uefi-common.c b/plugins/uefi/fu-uefi-common.c
-index 70e0c93c..c692506a 100644
+index 6cd55672..c4ab152a 100644
 --- a/plugins/uefi/fu-uefi-common.c
 +++ b/plugins/uefi/fu-uefi-common.c
-@@ -244,8 +244,14 @@ fu_uefi_get_esp_path_for_os (const gchar *base)
+@@ -235,8 +235,14 @@ fu_uefi_get_esp_path_for_os (const gchar *base)
  	}
  	if (os_release_id == NULL)
  		os_release_id = "unknown";

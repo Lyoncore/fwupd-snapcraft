@@ -1,7 +1,7 @@
-From 679b1166ff1c0f049ac38ebdbb0ca4ba0f3298a1 Mon Sep 17 00:00:00 2001
+From 6daeef63f5f03fa6b605a25e21df9d32e0deaa0a Mon Sep 17 00:00:00 2001
 From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
 Date: Sun, 7 Jun 2020 21:57:38 +0800
-Subject: [PATCH 2/4] Add SNAP env path as search path of policykit for ubuntu
+Subject: [PATCH 2/6] Add SNAP env path as search path of policykit for ubuntu
  core
 
 ---
@@ -9,10 +9,10 @@ Subject: [PATCH 2/4] Add SNAP env path as search path of policykit for ubuntu
  1 file changed, 4 insertions(+)
 
 diff --git a/libfwupdplugin/fu-common.c b/libfwupdplugin/fu-common.c
-index 81dfa329..5a1cfe1e 100644
+index f91c4f74..75acc953 100644
 --- a/libfwupdplugin/fu-common.c
 +++ b/libfwupdplugin/fu-common.c
-@@ -1118,6 +1118,10 @@ fu_common_get_path (FuPathKind path_kind)
+@@ -1125,6 +1125,10 @@ fu_common_get_path (FuPathKind path_kind)
  		return g_strdup ("/system-update");
  	case FU_PATH_KIND_POLKIT_ACTIONS:
  #ifdef POLKIT_ACTIONDIR
