@@ -1,0 +1,98 @@
+From db6a946ba5160f10ab52dedb5a4595a2e2cb8d9f Mon Sep 17 00:00:00 2001
+From: Hsieh-Tseng Shen <woodrow.shen@gmail.com>
+Date: Tue, 20 Oct 2020 17:03:55 +0800
+Subject: [PATCH] Change system config path for Snapping
+
+---
+ src/udisksdaemon.c | 14 +++++++++-----
+ src/udisksstate.c  | 35 ++++++++++++++++++++++++-----------
+ 2 files changed, 33 insertions(+), 16 deletions(-)
+
+diff --git a/src/udisksdaemon.c b/src/udisksdaemon.c
+index a50d665f..6ddf5a90 100644
+--- a/src/udisksdaemon.c
++++ b/src/udisksdaemon.c
+@@ -323,14 +323,18 @@ udisks_daemon_constructed (GObject *object)
+         }
+     }
+ 
+-  if (!g_file_test (PACKAGE_LOCALSTATE_DIR "/lib/udisks2", G_FILE_TEST_IS_DIR))
++  /* If we're running in a snap environment just keep the state in $SNAP_DATA.
++   * otherwise we need to create a traditional state dir */
++  if (g_getenv ("SNAP_DATA") == NULL)
++  {
++    if (!g_file_test (PACKAGE_LOCALSTATE_DIR "/lib/udisks2", G_FILE_TEST_IS_DIR))
+     {
+       if (g_mkdir_with_parents (PACKAGE_LOCALSTATE_DIR "/lib/udisks2", 0700) != 0)
+-        {
+-          udisks_critical ("Error creating directory %s: %m", PACKAGE_LOCALSTATE_DIR "/lib/udisks2");
+-        }
++      {
++        udisks_critical ("Error creating directory %s: %m", PACKAGE_LOCALSTATE_DIR "/lib/udisks2");
++      }
+     }
+-
++  }
+ 
+   if (! daemon->uninstalled)
+     {
+diff --git a/src/udisksstate.c b/src/udisksstate.c
+index fade2990..f7eca059 100644
+--- a/src/udisksstate.c
++++ b/src/udisksstate.c
+@@ -2120,14 +2120,20 @@ udisks_state_get (UDisksState           *state,
+    * - could also mmap the file
+    */
+ 
+-#ifdef HAVE_FHS_MEDIA
+-  /* /media usually isn't on a tmpfs, so we need to make this persistant */
+-  if (strcmp (key, "mounted-fs") == 0)
+-    path = g_strdup_printf (PACKAGE_LOCALSTATE_DIR "/lib/udisks2/%s", key);
++  if (g_getenv ("SNAP_DATA") != NULL)
++  {
++    path = g_strdup_printf ("%s/%s", g_getenv ("SNAP_DATA"), key);
++  }
+   else
++  {
++#ifdef HAVE_FHS_MEDIA
++    /* /media usually isn't on a tmpfs, so we need to make this persistant */
++    if (strcmp (key, "mounted-fs") == 0)
++      path = g_strdup_printf (PACKAGE_LOCALSTATE_DIR "/lib/udisks2/%s", key);
++    else
+ #endif
+-    path = g_strdup_printf ("/run/udisks2/%s", key);
+-
++      path = g_strdup_printf ("/run/udisks2/%s", key);
++  }
+ 
+   /* see if it's already in the cache */
+   ret = g_hash_table_lookup (state->cache, path);
+@@ -2199,13 +2205,20 @@ udisks_state_set (UDisksState          *state,
+   data = g_malloc (size);
+   g_variant_store (normalized, data);
+ 
+-#ifdef HAVE_FHS_MEDIA
+-  /* /media usually isn't on a tmpfs, so we need to make this persistant */
+-  if (strcmp (key, "mounted-fs") == 0)
+-    path = g_strdup_printf (PACKAGE_LOCALSTATE_DIR "/lib/udisks2/%s", key);
++  if (g_getenv ("SNAP_DATA") != NULL)
++  {
++    path = g_strdup_printf ("%s/%s", g_getenv ("SNAP_DATA"), key);
++  }
+   else
++  {
++#ifdef HAVE_FHS_MEDIA
++    /* /media usually isn't on a tmpfs, so we need to make this persistant */
++    if (strcmp (key, "mounted-fs") == 0)
++      path = g_strdup_printf (PACKAGE_LOCALSTATE_DIR "/lib/udisks2/%s", key);
++    else
+ #endif
+-    path = g_strdup_printf ("/run/udisks2/%s", key);
++      path = g_strdup_printf ("/run/udisks2/%s", key);
++  }
+ 
+   g_hash_table_insert (state->cache, g_strdup (path), g_variant_ref (value));
+ 
+-- 
+2.25.1
+
