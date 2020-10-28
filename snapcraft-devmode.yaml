@@ -10,20 +10,32 @@ base: core18
 adopt-info: fwupd
 
 apps:
+  udisksd:
+    command: libexec/udisks2/udisksd
+    daemon: simple
+    slots: [udisks2]
+    plugs:
+      - hardware-observe
+      - mount-observe
   fwupd:
     command: fwupd.wrapper
     daemon: simple
-    plugs: [hardware-observe]
+    plugs:
+      - hardware-observe
+      - tpm
+      - udisks2c
     slots: [fwupd]
   fwupdmgr:
     command: fwupdmgr.wrapper
     completer:
       share/bash-completion/completions/fwupdmgr
-    plugs: [network,fwupdmgr,shutdown] #network plug for sendmmsg
+    plugs: [network,fwupdmgr,shutdown]
 
 plugs:
   fwupdmgr:
     interface: fwupd
+  udisks2c:
+    interface: udisks2
 
 slots:
   fwupd:
@@ -33,17 +45,99 @@ slots:
     interface: content
     write:
       - $SNAP_DATA
+  udisks2:
+    interface: udisks2
+
+layout:
+  /var/lib/udisks2:
+    bind: $SNAP_DATA/var/lib/udisks2
+  /etc/udisks2/udisks2.conf:
+    bind-file: $SNAP/etc/udisks2/udisks2.conf
+  /etc/libblockdev/conf.d:
+    bind: $SNAP/etc/libblockdev/conf.d
 
 parts:
+  udisks:
+    source: https://github.com/storaged-project/udisks.git
+    source-tag: udisks-2.7.6
+    plugin: autotools
+    override-pull: |
+      snapcraftctl pull
+      # apply patches from fwupd-snapcraft
+      git am $SNAPCRAFT_PART_BUILD/../../../patches/udisks2/000*.patch
+    configflags:
+        - --enable-fhs-media
+    install-via: destdir
+    build-packages:
+        - pkg-config
+        - xsltproc
+        - gtk-doc-tools
+        - intltool
+        - libglib2.0-dev
+        - udev
+        - gnome-common
+        - libgudev-1.0-dev
+        - libpolkit-gobject-1-dev
+        - libpolkit-agent-1-dev
+        - libacl1-dev
+        - libgirepository1.0-dev
+        - gobject-introspection
+        - libatasmart-dev
+        - libsystemd-dev
+        - libmount-dev
+        - libblockdev-dev
+        - libblockdev-part-dev
+        - libblockdev-loop-dev
+        - libblockdev-swap-dev
+        - libblockdev-mdraid-dev
+        - libblockdev-fs-dev
+        - libblockdev-crypto-dev
+    stage-packages:
+        - libacl1
+        - libatasmart4
+        - libglib2.0-0
+        - libgudev-1.0-0
+        - libpam-systemd
+        - libpolkit-agent-1-0
+        - libpolkit-gobject-1-0
+        - parted
+        - libmount1
+        - libblockdev2
+        - libblockdev-part2
+        - libblockdev-loop2
+        - libblockdev-swap2
+        - libblockdev-mdraid2
+        - libblockdev-fs2
+        - libblockdev-crypto2
+    filesets:
+      licenses:
+          - usr/share/doc/*/*copyright*
+      binaries:
+          - bin/udisksctl
+          - libexec/udisks2/udisksd
+    prime:
+        - $binaries
+        - $licenses
+        - lib
+        - -lib/pkgconfig
+        - -lib/systemd
+        - -lib/cgmanager
+        - libexec
+        - sbin
+        - usr/lib/*/*.so*
   libefivar-dev:
     plugin: make
-    source: https://github.com/lyoncore/efivar.git
+    source: https://github.com/rhboot/efivar.git
     source-type: git
-    source-branch: '20200423'
+    source-commit: f0d3ed17ef3b2bbdfdff4dde12ec0a82d1ccdd33
     build-packages:
       - libpopt-dev
     organize:
       usr/lib64: usr/lib/x86_64-linux-gnu
+    override-build: |
+      # apply patches from fwupd-snapcraft
+      git am $SNAPCRAFT_PART_BUILD/../../../patches/efivar/000*.patch
+      snapcraftctl build
   libefivar-fixpkgconfig:
     plugin: make
     source: libefivar-fixpkgconfig
@@ -129,13 +223,13 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/Lyoncore/fwupd.git
     source-type: git
-    source-branch: stable_release_for_core
+    source-branch: 1_4_6_for_core
     override-build: |
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded
       UEFI_FW_TOOLS=1.6.0
-      FWUPD=1.4.2
+      FWUPD=1.4.6
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
