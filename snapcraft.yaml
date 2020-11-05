@@ -213,8 +213,13 @@ parts:
                        -Dgtkdoc=false,
                        -Dintrospection=false,
                        -Dman=false,
+                       -Dpolkit=false,
                        -Dplugin_modem_manager=false,
                        -Dudevdir=$SNAPCRAFT_STAGE/lib/udev,
+                       "-Dgusb:tests=false",
+                       "-Dgusb:docs=false",
+                       "-Dgusb:introspection=false",
+                       "-Dgusb:vapi=false",
                        "-Dlibxmlb:gtkdoc=false",
                        "-Dlibxmlb:introspection=false",
                        "-Dlibjcat:man=false",
@@ -223,15 +228,15 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/fwupd/fwupd.git
     source-type: git
-    source-tag: 1.4.6
+    source-tag: 1.5.1
     override-build: |
       # apply patches from fwupd-snapcraft
       git am $SNAPCRAFT_PART_BUILD/../../../patches/fwupd/000*.patch
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded
-      UEFI_FW_TOOLS=1.6.0
-      FWUPD=1.4.6
+      UEFI_FW_TOOLS=1.6.1
+      FWUPD=1.5.1
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
@@ -254,6 +259,7 @@ parts:
       - libsmbios-dev
       - libsoup2.4-dev
       - libsqlite3-dev
+      - libsystemd-dev
       - locales
       - pkg-config
       - systemd
@@ -368,3 +374,8 @@ parts:
       - fwupd.wrapper
       - fwupdmgr.wrapper
     after: [update-mime]
+  fwupd-config:
+    plugin: nil
+    override-prime: |
+      sed -i 's|#FallbacktoRemovablePath=false|FallbacktoRemovablePath=true|' etc/fwupd/uefi.conf
+    after: [fwupd-wrappers]
