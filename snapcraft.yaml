@@ -17,6 +17,18 @@ apps:
     plugs:
       - hardware-observe
       - mount-observe
+  dfu-tool:
+    command: dfu-tool.wrapper
+  #dbxtool:
+    #command: dbxtool.wrapper
+  fwupdtool:
+    command: fwupdtool.wrapper
+    completer:
+      share/bash-completion/completions/fwupdtool
+    plugs:
+      - network
+      - hardware-observe
+      - tpm
   fwupd:
     command: fwupd.wrapper
     daemon: simple
@@ -29,7 +41,15 @@ apps:
     command: fwupdmgr.wrapper
     completer:
       share/bash-completion/completions/fwupdmgr
-    plugs: [network,fwupdmgr,shutdown]
+    plugs:
+      - network
+      - fwupdmgr
+      - shutdown
+  fwupdtpmevlog:
+    command: fwupdtpmevlog.wrapper
+  fwupdagent:
+    command: fwupdagent.wrapper
+    plugs: [network]
 
 plugs:
   fwupdmgr:
@@ -370,9 +390,14 @@ parts:
       cp -r $SNAPCRAFT_PROJECT_DIR/parts/fwupd/src/contrib/snap/fwupd-command .
       snapcraftctl build
     stage:
+      - dfu-tool.wrapper
+      - dbxtool.wrapper
       - fwupd-command
+      - fwupdtool.wrapper
       - fwupd.wrapper
       - fwupdmgr.wrapper
+      - fwupdtpmevlog.wrapper
+      - fwupdagent.wrapper
     after: [update-mime]
   fwupd-config:
     plugin: nil
