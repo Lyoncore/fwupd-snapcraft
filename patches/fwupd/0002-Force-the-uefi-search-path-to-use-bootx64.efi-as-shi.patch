@@ -1,0 +1,27 @@
+From 0dbc51f42bbbbc2805c87d5bb315c934b8ffbb04 Mon Sep 17 00:00:00 2001
+From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
+Date: Wed, 11 Nov 2020 11:02:32 +0800
+Subject: [PATCH 2/2] Force the uefi search path to use bootx64.efi as
+ shimx64.efi
+
+---
+ plugins/uefi/fu-uefi-bootmgr.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/plugins/uefi/fu-uefi-bootmgr.c b/plugins/uefi/fu-uefi-bootmgr.c
+index ee739672..048530b0 100644
+--- a/plugins/uefi/fu-uefi-bootmgr.c
++++ b/plugins/uefi/fu-uefi-bootmgr.c
+@@ -273,7 +273,8 @@ fu_uefi_bootmgr_bootnext (const gchar *esp_path,
+ 	secure_boot = fu_efivar_secure_boot_enabled ();
+ 	if (secure_boot) {
+ 		/* test to make sure shim is there if we need it */
+-		shim_app = fu_uefi_get_esp_app_path (esp_path, "shim", error);
++		/* ubuntu core: the shim is located at /EFI/boot/bootx64.efi */
++		shim_app = fu_uefi_get_esp_app_path (esp_path, "boot", error);
+ 		if (shim_app == NULL)
+ 			return FALSE;
+ 
+-- 
+2.25.1
+

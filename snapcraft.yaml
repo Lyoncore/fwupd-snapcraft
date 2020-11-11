@@ -236,6 +236,7 @@ parts:
                        -Dpolkit=false,
                        -Dplugin_modem_manager=false,
                        -Dudevdir=$SNAPCRAFT_STAGE/lib/udev,
+                       -Defi_os_dir=boot,
                        "-Dgusb:tests=false",
                        "-Dgusb:docs=false",
                        "-Dgusb:introspection=false",
@@ -399,8 +400,3 @@ parts:
       - fwupdtpmevlog.wrapper
       - fwupdagent.wrapper
     after: [update-mime]
-  fwupd-config:
-    plugin: nil
-    override-prime: |
-      sed -i 's|#FallbacktoRemovablePath=false|FallbacktoRemovablePath=true|' etc/fwupd/uefi.conf
-    after: [fwupd-wrappers]
