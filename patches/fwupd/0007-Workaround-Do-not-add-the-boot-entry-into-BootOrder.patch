@@ -1,0 +1,32 @@
+From 9a7f3ab5b6cf21ce790395512d429826ea7c2b12 Mon Sep 17 00:00:00 2001
+From: Ethan Hsieh <ethan.hsieh@canonical.com>
+Date: Thu, 19 Nov 2020 11:36:17 +0800
+Subject: [PATCH 7/7] Workaround: Do not add the boot entry into BootOrder
+
+The boot entry added by fwupd has the same path but different load option.
+The boot entry for Ubuntu Core: File(\EFI\BOOT\BOOTX64.EFI)
+The boot entry for FW updater: File(\EFI\boot\bootx64.efi)\.f.w.u.p.d.x.6.4...e.f.i...
+Some BIOS will remove the boot entry when it is in BootOrder and has a duplicated path.
+The BIOS issue can be workaround by removing the boot entry from BootOrder.
+---
+ plugins/uefi/fu-uefi-bootmgr.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/plugins/uefi/fu-uefi-bootmgr.c b/plugins/uefi/fu-uefi-bootmgr.c
+index 90290f47..ff24d80b 100644
+--- a/plugins/uefi/fu-uefi-bootmgr.c
++++ b/plugins/uefi/fu-uefi-bootmgr.c
+@@ -207,10 +207,6 @@ fu_uefi_setup_bootnext_with_dp (const guint8 *dp_buf, guint8 *opt, gssize opt_si
+ 		}
+ 	}
+ 
+-	/* TODO: conditionalize this on the UEFI version? */
+-	if(!fu_uefi_bootmgr_add_to_boot_order (boot_next, error))
+-		return FALSE;
+-
+ 	/* set the boot next */
+ 	rc = efi_set_variable (efi_guid_global, "BootNext", (guint8 *)&boot_next, 2,
+ 			       EFI_VARIABLE_NON_VOLATILE |
+-- 
+2.25.1
+
