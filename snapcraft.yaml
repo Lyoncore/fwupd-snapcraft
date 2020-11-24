@@ -55,6 +55,8 @@ layout:
     bind-file: $SNAP/etc/udisks2/udisks2.conf
   /etc/libblockdev/conf.d:
     bind: $SNAP/etc/libblockdev/conf.d
+  /usr/bin/gpg:
+    bind-file: $SNAP/usr/bin/gpg
 
 parts:
   udisks:
@@ -368,3 +370,12 @@ parts:
       - fwupd.wrapper
       - fwupdmgr.wrapper
     after: [update-mime]
+  gpg:
+    plugin: nil
+    stage-packages:
+      - gpg
+    prime:
+      - -usr/bin/gpgconf
+      - -usr/bin/gpg-connect-agent
+      - -usr/share/doc
+      - -usr/share/man
