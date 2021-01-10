@@ -19,8 +19,8 @@ apps:
       - mount-observe
   dfu-tool:
     command: dfu-tool.wrapper
-  #dbxtool:
-    #command: dbxtool.wrapper
+  dbxtool:
+    command: dbxtool.wrapper
   fwupdtool:
     command: fwupdtool.wrapper
     completer:
@@ -251,15 +251,15 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/fwupd/fwupd.git
     source-type: git
-    source-tag: 1.5.1
+    source-tag: 1.5.4
     override-build: |
       # apply patches from fwupd-snapcraft
       git am $SNAPCRAFT_PART_BUILD/../../../patches/fwupd/000*.patch
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded
-      UEFI_FW_TOOLS=1.6.1
-      FWUPD=1.5.1
+      UEFI_FW_TOOLS=1.6.2
+      FWUPD=1.5.4
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
@@ -411,3 +411,7 @@ parts:
       - -usr/bin/gpg-connect-agent
       - -usr/share/doc
       - -usr/share/man
+  fwupd-uefi-conf:
+    plugin: nil
+    override-prime: |
+      sed -i 's|#FallbacktoRemovablePath=false|FallbacktoRemovablePath=true|' etc/fwupd/uefi.conf
