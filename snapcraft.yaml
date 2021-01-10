@@ -166,6 +166,9 @@ parts:
     make-parameters:
       - SNAPCRAFT_STAGE=$SNAPCRAFT_STAGE
     after: [libefivar-dev]
+  curl:
+    plugin: dump
+    source: https://curl.se/download/curl-7.73.0.tar.bz2
   tpm2-tss:
     plugin: autotools
     source: https://github.com/tpm2-software/tpm2-tss/releases/download/2.3.0/tpm2-tss-2.3.0.tar.gz
@@ -183,6 +186,8 @@ parts:
     source: https://ftp.gnu.org/gnu/nettle/nettle-3.5.tar.gz
     build-packages:
       - libgmp-dev
+    stage:
+      - -share/info/dir
     prime:
       - -include
       - -bin
@@ -197,6 +202,8 @@ parts:
       - libidn2-dev
       - libunbound-dev
       - libp11-kit-dev
+    stage:
+      - -share/info/dir
     prime:
       - -include
       - -bin
@@ -280,13 +287,13 @@ parts:
       - libpci-dev
       - libpolkit-gobject-1-dev
       - libsmbios-dev
-      - libsoup2.4-dev
       - libsqlite3-dev
       - libsystemd-dev
       - locales
       - pkg-config
       - systemd
       - uuid-dev
+      - libcurl4-gnutls-dev
     stage-packages:
       - libgcab-1.0-0
       - libarchive13
@@ -300,9 +307,9 @@ parts:
       - libjson-glib-1.0-0
       - libpolkit-gobject-1-0
       - libsmbios-c2
-      - libsoup2.4-1
       - glib-networking
       - libglib2.0-bin
+      - libcurl3-gnutls
     prime:
       # we explicitly don't want /usr/bin/gpgconf
       # this will cause gpgme to error finding it
@@ -340,7 +347,7 @@ parts:
       - -usr/lib/*/pkgconfig
       # we don't want system gnutls leaking in
       - -usr/lib/*/libgnutls*
-    after: [libefivar-fixpkgconfig, meson, build-introspection, tpm2-tss, gnutls]
+    after: [libefivar-fixpkgconfig, meson, build-introspection, tpm2-tss, gnutls, curl]
   #fetch the latest version of the signed bootloader
   #this might not match our fwupdx64.efi, but it's better than nothing
   fwup-efi-signed:
