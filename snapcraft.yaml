@@ -37,6 +37,7 @@ apps:
       - tpm
       - udisks2c
     slots: [fwupd]
+    after: [udisksd]
   fwupdmgr:
     command: fwupdmgr.wrapper
     completer:
@@ -169,6 +170,10 @@ parts:
   curl:
     plugin: dump
     source: https://curl.se/download/curl-7.73.0.tar.bz2
+    stage:
+      - -*
+    prime:
+      - -*
   tpm2-tss:
     plugin: autotools
     source: https://github.com/tpm2-software/tpm2-tss/releases/download/2.3.0/tpm2-tss-2.3.0.tar.gz
