@@ -426,4 +426,4 @@ parts:
   fwupd-uefi-conf:
     plugin: nil
     override-prime: |
-      sed -i 's|#FallbacktoRemovablePath=false|FallbacktoRemovablePath=true|' etc/fwupd/uefi.conf
+      sed -i 's|#FallbacktoRemovablePath=false|FallbacktoRemovablePath=true|' etc/fwupd/uefi_capsule.conf
