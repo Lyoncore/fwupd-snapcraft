@@ -6,7 +6,7 @@ description: |
 
 grade: stable
 confinement: strict
-base: core18
+base: core20
 adopt-info: fwupd
 
 apps:
@@ -88,9 +88,7 @@ parts:
       snapcraftctl pull
       # apply patches from fwupd-snapcraft
       git am $SNAPCRAFT_PART_BUILD/../../../patches/udisks2/000*.patch
-    configflags:
-        - --enable-fhs-media
-    install-via: destdir
+    autotools-configure-parameters: ['--enable-fhs-media']
     build-packages:
         - pkg-config
         - xsltproc
@@ -177,8 +175,7 @@ parts:
   tpm2-tss:
     plugin: autotools
     source: https://github.com/tpm2-software/tpm2-tss/releases/download/2.3.0/tpm2-tss-2.3.0.tar.gz
-    configflags:
-      - --disable-doxygen-doc
+    autotools-configure-parameters: ['--disable-doxygen-doc']
     prime:
       - -include
       - -bin
