@@ -247,7 +247,6 @@ parts:
                        -Dpolkit=false,
                        -Dplugin_modem_manager=false,
                        -Dudevdir=$SNAPCRAFT_STAGE/lib/udev,
-                       -Defi_os_dir=boot,
                        "-Dgusb:tests=false",
                        "-Dgusb:docs=false",
                        "-Dgusb:introspection=false",
