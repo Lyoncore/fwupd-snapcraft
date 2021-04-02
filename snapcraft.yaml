@@ -82,7 +82,7 @@ layout:
 parts:
   udisks:
     source: https://github.com/storaged-project/udisks.git
-    source-tag: udisks-2.7.6
+    source-tag: udisks-2.8.4
     plugin: autotools
     override-pull: |
       snapcraftctl pull
@@ -265,7 +265,7 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/fwupd/fwupd.git
     source-type: git
-    source-tag: 1.5.7
+    source-tag: 1.5.8
     build-environment:
       - PYTHONPATH: ${SNAPCRAFT_STAGE}/usr/lib/python3/dist-packages
     override-pull: |
@@ -276,8 +276,8 @@ parts:
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded
-      UEFI_FW_TOOLS=1.6.2
-      FWUPD=1.5.7
+      UEFI_FW_TOOLS=1.6.3
+      FWUPD=1.5.8
       VERSION=$UEFI_FW_TOOLS-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
