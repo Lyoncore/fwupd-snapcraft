@@ -88,7 +88,7 @@ parts:
       snapcraftctl pull
       # apply patches from fwupd-snapcraft
       git am ${SNAPCRAFT_PART_SRC}/../../../patches/udisks2/000*.patch
-    autotools-configure-parameters: ['--enable-fhs-media']
+    autotools-configure-parameters: ['--prefix=/', '--enable-fhs-media']
     build-packages:
         - pkg-config
         - xsltproc
@@ -130,10 +130,6 @@ parts:
         - libblockdev-mdraid2
         - libblockdev-fs2
         - libblockdev-crypto2
-    organize:
-      usr/local/bin/udisksctl: bin/udisksctl
-      usr/local/libexec/udisks2/udisksd: libexec/udisks2/udisksd
-      usr/local/lib/libudisks2.so.0: lib/x86_64-linux-gnu/libudisks2.so.0
     filesets:
       licenses:
           - usr/share/doc/*/*copyright*
@@ -179,7 +175,7 @@ parts:
   tpm2-tss:
     plugin: autotools
     source: https://github.com/tpm2-software/tpm2-tss/releases/download/2.3.0/tpm2-tss-2.3.0.tar.gz
-    autotools-configure-parameters: ['--disable-doxygen-doc']
+    autotools-configure-parameters: ['--prefix=/', '--disable-doxygen-doc']
     prime:
       - -include
       - -bin
@@ -202,6 +198,7 @@ parts:
   gnutls:
     plugin: autotools
     source: https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.12.tar.xz
+    autotools-configure-parameters: ['--prefix=/']
     build-packages:
       - libtasn1-6-dev
       - libunistring-dev
