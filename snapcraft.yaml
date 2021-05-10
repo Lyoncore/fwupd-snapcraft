@@ -113,6 +113,7 @@ parts:
         - libblockdev-mdraid-dev
         - libblockdev-fs-dev
         - libblockdev-crypto-dev
+        - policykit-1
     stage-packages:
         - libacl1
         - libatasmart4
@@ -302,6 +303,7 @@ parts:
       - systemd
       - uuid-dev
       - libcurl4-gnutls-dev
+      - python3-pil
     stage-packages:
       - libgcab-1.0-0
       - libarchive13
