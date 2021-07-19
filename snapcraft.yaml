@@ -17,6 +17,7 @@ apps:
     plugs:
       - hardware-observe
       - mount-observe
+    restart-condition: on-failure
   dfu-tool:
     command: dfu-tool.wrapper
   dbxtool:
@@ -38,6 +39,7 @@ apps:
       - udisks2c
     slots: [fwupd]
     after: [udisksd]
+    restart-condition: always
   fwupdmgr:
     command: fwupdmgr.wrapper
     completer:
