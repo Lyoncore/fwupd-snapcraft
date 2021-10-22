@@ -1,4 +1,4 @@
-From 1da91c0ccd608f752dc3e5bcb17ba111b421b2fb Mon Sep 17 00:00:00 2001
+From 940ea16690c5a77afed4367b4839d717092ff129 Mon Sep 17 00:00:00 2001
 From: Hsieh-Tseng Shen <woodrow.shen@canonical.com>
 Date: Fri, 12 Jun 2020 13:17:28 +0800
 Subject: [PATCH 1/2] Change fwupd service naming convention for uefi-fw-tools
@@ -8,23 +8,23 @@ Subject: [PATCH 1/2] Change fwupd service naming convention for uefi-fw-tools
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/src/fu-util-common.c b/src/fu-util-common.c
-index 9fe1013b..47229f97 100644
+index 688979c5..6a97393a 100644
 --- a/src/fu-util-common.c
 +++ b/src/fu-util-common.c
-@@ -31,7 +31,8 @@
+@@ -30,7 +30,8 @@
  #endif
  
- #define SYSTEMD_FWUPD_UNIT		"fwupd.service"
--#define SYSTEMD_SNAP_FWUPD_UNIT		"snap.fwupd.fwupd.service"
-+#define SYSTEMD_SNAP_FWUPD_UNIT		"snap.uefi-fw-tools.fwupd.service"
-+#define SNAP_FWUPDMGR_UNIT		"uefi-fw-tools.fwupdmgr"
+ #define SYSTEMD_FWUPD_UNIT	"fwupd.service"
+-#define SYSTEMD_SNAP_FWUPD_UNIT "snap.fwupd.fwupd.service"
++#define SYSTEMD_SNAP_FWUPD_UNIT "snap.uefi-fw-tools.fwupd.service"
++#define SNAP_FWUPDMGR_UNIT	"uefi-fw-tools.fwupdmgr"
  
  const gchar *
- fu_util_get_systemd_unit (void)
-@@ -52,7 +53,7 @@ static const gchar *
- fu_util_get_expected_command (const gchar *target)
+ fu_util_get_systemd_unit(void)
+@@ -51,7 +52,7 @@ static const gchar *
+ fu_util_get_expected_command(const gchar *target)
  {
- 	if (g_strcmp0 (target, SYSTEMD_SNAP_FWUPD_UNIT) == 0)
+ 	if (g_strcmp0(target, SYSTEMD_SNAP_FWUPD_UNIT) == 0)
 -		return "fwupd.fwupdmgr";
 +		return SNAP_FWUPDMGR_UNIT;
  	return "fwupdmgr";
