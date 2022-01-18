@@ -1,4 +1,4 @@
-From 9784a9ba38ed2d17704c94a1de8d38b8c1613908 Mon Sep 17 00:00:00 2001
+From 8256da80e2b2d70280cbcbc176d919502c45037b Mon Sep 17 00:00:00 2001
 From: Hsieh-Tseng Shen <woodrow.shen@gmail.com>
 Date: Mon, 19 Jul 2021 14:07:39 +0800
 Subject: [PATCH 2/2] Add efivar into dependency of uefi_capsule
@@ -10,10 +10,10 @@ Signed-off-by: Hsieh-Tseng Shen <woodrow.shen@gmail.com>
  2 files changed, 4 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index db5a5680..70d113dd 100644
+index c9ffd8db..a45ddfab 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -400,6 +400,7 @@ endif
+@@ -411,6 +411,7 @@ endif
  
  if build_standalone and get_option('plugin_uefi_capsule')
    efiboot = dependency('efiboot')
@@ -22,33 +22,33 @@ index db5a5680..70d113dd 100644
    efi_app_location = join_paths(libexecdir, 'fwupd', 'efi')
    conf.set_quoted('EFI_APP_LOCATION', efi_app_location)
 diff --git a/plugins/uefi-capsule/meson.build b/plugins/uefi-capsule/meson.build
-index 708586b0..73fb25fb 100644
+index 01e2f07b..cdaedaa0 100644
 --- a/plugins/uefi-capsule/meson.build
 +++ b/plugins/uefi-capsule/meson.build
-@@ -62,6 +62,7 @@ shared_module('fu_plugin_uefi_capsule',
+@@ -61,6 +61,7 @@ shared_module('fu_plugin_uefi_capsule',
      plugin_deps,
      platform_deps,
      efiboot,
 +    efivar,
-     tpm2tss,
    ],
  )
-@@ -94,6 +95,7 @@ fwupdate = executable(
+ 
+@@ -92,6 +93,7 @@ fwupdate = executable(
      plugin_deps,
      platform_deps,
      efiboot,
 +    efivar,
-     tpm2tss,
    ],
    link_with : [
-@@ -179,6 +181,7 @@ if get_option('tests')
+     fwupd,
+@@ -178,6 +180,7 @@ if get_option('tests')
        plugin_deps,
        platform_deps,
        efiboot,
 +      efivar,
-       tpm2tss,
      ],
      link_with : [
+       fwupd,
 -- 
 2.25.1
 

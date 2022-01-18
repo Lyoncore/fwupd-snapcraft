@@ -265,7 +265,7 @@ parts:
                        "-Dlibjcat:tests=false"]
     source: https://github.com/fwupd/fwupd.git
     source-type: git
-    source-tag: 1.7.0
+    source-tag: 1.7.4
     build-environment:
       - PYTHONPATH: ${SNAPCRAFT_STAGE}/usr/lib/python3/dist-packages
     override-pull: |
@@ -276,7 +276,7 @@ parts:
       snapcraftctl build
       echo $(git describe HEAD --always) > $SNAPCRAFT_STAGE/version
       # TODO: don't use hardcoded
-      FWUPD=1.7.0
+      FWUPD=1.7.4
       VERSION=confined-$FWUPD+git$(git rev-parse --short HEAD)
       snapcraftctl set-version $VERSION
     build-packages:
