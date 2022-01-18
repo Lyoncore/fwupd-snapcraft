@@ -48,8 +48,6 @@ apps:
       - network
       - fwupdmgr
       - shutdown
-  fwupdtpmevlog:
-    command: fwupdtpmevlog.wrapper
   fwupdagent:
     command: fwupdagent.wrapper
     plugs: [network]
@@ -149,6 +147,21 @@ parts:
         - libexec
         - sbin
         - usr/lib/*/*.so*
+  json-glib:
+    plugin: meson
+    source: https://gitlab.gnome.org/GNOME/json-glib.git
+    source-tag: 1.6.6
+    after: [meson]
+    meson-parameters: [--prefix=/,
+                       -Dgtk_doc=disabled,
+                       -Dintrospection=disabled,
+                       -Dman=false,
+                       -Dtests=false]
+    prime:
+      - -include
+      - -bin
+      - -lib/*/pkgconfig
+      - -share
   libefivar-dev:
     plugin: make
     source: https://github.com/rhboot/efivar.git
@@ -218,7 +231,7 @@ parts:
     after: [nettle]
   meson:
     plugin: python
-    source: https://github.com/mesonbuild/meson/releases/download/0.54.0/meson-0.54.0.tar.gz
+    source: https://github.com/mesonbuild/meson/releases/download/0.60.2/meson-0.60.2.tar.gz
     build-packages:
       - ninja-build
       - python3-distutils-extra
@@ -252,6 +265,7 @@ parts:
                        -Dman=false,
                        -Dpolkit=false,
                        -Dplugin_modem_manager=false,
+                       -Dplugin_powerd=false,
                        -Dudevdir=$SNAPCRAFT_STAGE/lib/udev,
                        "-Dgusb:tests=false",
                        "-Dgusb:docs=false",
@@ -285,14 +299,13 @@ parts:
       - gnu-efi
       - libarchive-dev
       - libcairo-dev
-      - libelf-dev
       - libftdi1-dev
       - libgudev-1.0-dev
       - libgusb-dev
       - libgcab-dev
       - libglib2.0-dev
       - libgpgme11-dev
-      - libjson-glib-dev
+      - liblzma-dev
       - libpango1.0-dev
       - libpci-dev
       - libpolkit-gobject-1-dev
@@ -312,12 +325,11 @@ parts:
       - libarchive13
       - libassuan0
       - liblcms2-2
-      - libelf1
+      - liblzma5
       - libgusb2
       - libusb-1.0-0
       - libgudev-1.0-0
       - libgpgme11
-      - libjson-glib-1.0-0
       - libpolkit-gobject-1-0
       - libprotobuf-c1
       - libsmbios-c2
@@ -361,7 +373,7 @@ parts:
       - -usr/lib/*/pkgconfig
       # we don't want system gnutls leaking in
       - -usr/lib/*/libgnutls*
-    after: [udisks, libefivar-fixpkgconfig, meson, build-introspection, tpm2-tss, gnutls, curl]
+    after: [udisks, libefivar-fixpkgconfig, meson, build-introspection, tpm2-tss, gnutls, curl, json-glib]
   #fetch the latest version of the signed bootloader
   #this might not match our fwupdx64.efi, but it's better than nothing
   fwup-efi-signed:
@@ -420,7 +432,6 @@ parts:
       - fwupdtool.wrapper
       - fwupd.wrapper
       - fwupdmgr.wrapper
-      - fwupdtpmevlog.wrapper
       - fwupdagent.wrapper
     after: [update-mime]
   gpg:
