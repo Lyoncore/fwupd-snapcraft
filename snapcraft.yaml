@@ -319,6 +319,7 @@ parts:
       - libgpgme11
       - libjson-glib-1.0-0
       - libpolkit-gobject-1-0
+      - libprotobuf-c1
       - libsmbios-c2
       - glib-networking
       - libglib2.0-bin
